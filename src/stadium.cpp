@@ -50,6 +50,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -1697,6 +1698,7 @@ Stadium::collisions()
         }
 
         M_ball->moveToCollisionPos();
+        M_ball->updateCollisionVel();
         for ( PlayerCont::reference p : M_players )
         {
             p->moveToCollisionPos();
@@ -1709,13 +1711,6 @@ Stadium::collisions()
     //if ( max_loop < 8
     //    std::cerr << M_time << ": collision loop " << max_loop
     //              << std::endl;
-
-    M_ball->updateCollisionVel();
-    for ( PlayerCont::reference p : M_players )
-    {
-        p->updateCollisionVel();
-    }
-
 }
 
 void
@@ -1724,6 +1719,7 @@ Stadium::calcBallCollisionPos( Player * p )
     if ( playmode() == PM_PlayOn )
     {
         calcCollisionPos( M_ball, p );
+        calcCollisionVel( M_ball, p);
         return;
     }
 
@@ -1741,6 +1737,33 @@ Stadium::calcBallCollisionPos( Player * p )
 
     M_ball->collide( M_ball->pos() );
     p->collide( M_ball->pos() + b2p );
+}
+
+void
+Stadium::calcCollisionVel( MPObject * a,
+                           MPObject * b )
+{
+    const double ma = 0.2;
+    const double mb = 60;
+
+    const double cr = 0.8;
+
+    const PVector ua = a->vel();
+    const PVector ub = b->vel();
+
+    const PVector va = (ma*ua + mb*ub + mb*cr*(ub - ua))/(ma + mb);
+    const PVector vb = (ma*ua + mb*ub + ma*cr*(ua - ub))/(ma + mb);
+
+    std::cout << "cycle: " << time() << std::endl;
+    std::cout << std::fixed << std::setprecision(3)
+                << "ua: " << "(" << ua.r() << ", " << ua.th()/M_PI*180. << ") " << std::endl
+                << "va: " << "(" << va.r() << ", " << va.th()/M_PI*180. << ") " << std::endl
+                << "ub: " << "(" << ub.r() << ", " << ub.th()/M_PI*180. << ") " << std::endl
+                << "vb: " << "(" << vb.r() << ", " << vb.th()/M_PI*180. << ") "
+                << std::endl;
+
+    a->collide_vel(va);
+    b->collide_vel(vb);
 }
 
 void

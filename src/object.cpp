@@ -655,9 +655,19 @@ MPObject::moveToCollisionPos()
         M_pos = M_post_collision_pos;
         /*        cout << "newpos = " << obj->pos << std::endl; */
     }
+}
 
-    M_post_collision_pos.assign( 0.0, 0.0 );
-    M_collision_count = 0;
+void 
+MPObject::updateCollisionVel()
+{
+    if ( M_collision_count > 0 )
+    {
+        M_post_collision_vel /= M_collision_count;
+        M_vel = M_post_collision_vel;
+        if (M_vel.r() > ServerParam::instance().ballSpeedMax()){
+            M_vel.normalize(ServerParam::instance().ballSpeedMax());
+        }
+    }
 }
 
 

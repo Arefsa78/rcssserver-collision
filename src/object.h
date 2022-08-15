@@ -203,6 +203,39 @@ operator-( const PVector & lhs,
     return PVector( lhs ) -= rhs;
 }
 
+inline
+PVector
+operator*( const PVector & lhs,
+           const double & rhs)
+{
+    return PVector(lhs) *= rhs;
+}
+
+inline
+PVector
+operator*( const double & lhs,
+           const PVector & rhs)
+{
+    return PVector(rhs) *= lhs;
+}
+
+inline
+PVector
+operator/( const PVector & lhs,
+           const double & rhs)
+{
+    return PVector(lhs) /= rhs;
+}
+
+inline
+PVector
+operator/( const double & lhs,
+           const PVector & rhs)
+{
+    return PVector(rhs) /= lhs;
+}
+
+
 
 inline
 std::ostream &
@@ -496,6 +529,7 @@ private:
 
     /* new collision stuff */
     PVector M_post_collision_pos; //!< accumulated collision pos
+    PVector M_post_collision_vel; //!< accumulated collision vel
     int M_collision_count;
     bool M_collided;
 
@@ -578,14 +612,11 @@ public:
           ++M_collision_count;
           M_collided = true;
       }
-    void updateCollisionVel()
+    void collide_vel( const PVector & col_vel )
       {
-          if ( M_collided )
-          {
-              M_vel *= -0.1;
-              M_collided = false;
-          }
+          M_post_collision_vel += col_vel;
       }
+    void updateCollisionVel();
     void moveToCollisionPos();
 
     std::ostream & print( std::ostream & o ) const;
