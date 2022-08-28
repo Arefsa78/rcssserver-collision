@@ -475,6 +475,7 @@ MPObject::wind()
 void
 MPObject::_inc()
 {
+    M_last_pos = M_pos;
     if ( M_accel.x || M_accel.y )
     {
         double max_a = maxAccel();
@@ -529,6 +530,8 @@ MPObject::_inc()
             diff.normalize( diff.r() * 1.01 );
             M_pos = post.center() + diff;
         }
+
+        M_last_pos = M_pos;
 
         if ( M_vel.x != 0.0 || M_vel.y != 0.0 )
         {
@@ -589,6 +592,7 @@ MPObject::_inc()
         // If this small vector is not added to M_pos, intersect() may still
         // return pos() as the intersect point.
         M_pos += PVector::fromPolar( EPS, coll_2_circle.th() + 180.0 );
+        M_last_pos = M_pos;
 
         //         std::cout << "  rem = " << rem << '\n';
 

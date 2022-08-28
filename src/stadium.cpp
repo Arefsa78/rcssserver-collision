@@ -1766,6 +1766,88 @@ Stadium::calcCollisionVel( MPObject * a,
     b->collide_vel(vb);
 }
 
+
+// void
+// Stadium::calcCollisionPos(MPObject * a,
+//                           MPObject * b)
+// {
+//     if ( ! a || ! b )
+//     {
+//         return;
+//     }
+
+//     PVector apos = a->pos();
+    
+//     PVector bpos = b->pos();
+
+//     {
+//         PVector mid = a->pos() + b->pos();
+//         mid /= 2.0;
+
+//         PVector mid2a = a->pos() - mid;
+//         PVector mid2b = b->pos() - mid;
+
+//         /* pfr 10/25/01
+//            This was a really nasty bug. This used to be the condition
+//            if ( a->pos == b->pos )
+//            If a->pos and b->pos are approximately equal (but
+//            not ==, then a->pos - mid and b->pos - mid can both be 0.
+//            This means that in the else clause below, we call PVector::r(v)
+//            on two zero vectors, which makes them both (v,0).
+//            Then, the while statement below is an infinite loop */
+//         if ( a->pos() == b->pos()
+//              || ( ( a->pos() - mid ).r() < EPS
+//                   && ( b->pos() - mid ).r() < EPS )
+//              )
+//         {
+//             // if the two objects are directly on top on one and other
+//             // then they will be separated at a random angle
+//             double a_ang = drand ( -M_PI, M_PI );
+//             double b_ang = normalize_angle( a_ang + M_PI );
+//             mid2a = PVector::fromPolar( ( a->size() + b->size() ) / 2.0 + EPS, a_ang );
+//             mid2b = PVector::fromPolar( ( a->size() + b->size() ) / 2.0 + EPS, b_ang );
+//         }
+//         else
+//         {
+//             mid2a.normalize( ( a->size() + b->size() ) / 2.0 + EPS );
+//             mid2b.normalize( ( a->size() + b->size() ) / 2.0 + EPS );
+//         }
+
+//         apos = mid + mid2a;
+//         bpos = mid + mid2b;
+
+//         // 0.01% is added to the movement, as sometimes structural noise
+//         // means that even though mid2a and mid2b should be
+//         // a->size + b->size apart, they are ever so slightly
+//         // less.
+//         int count = 0;
+//         const double collision_dist2 = std::pow( a->size() + b->size(), 2 );
+//         while ( apos.distance2( bpos ) < collision_dist2
+//                 && count < 10 )
+//         {
+//             mid2a.normalize( mid2a.r() * 1.0001 );
+//             mid2b.normalize( mid2b.r() * 1.0001 );
+//             apos = mid + mid2a;
+//             bpos = mid + mid2b;
+//             ++count;
+//         }
+//     }
+
+
+//     /*    cout << "apos = " << a->pos << std::endl; */
+//     /*    cout << "anewpos = " << (mid + mid2a ) << std::endl; */
+
+//     /*    cout << "bpos = " << b->pos << std::endl; */
+//     /*    cout << "bnewpos = " << (mid + mid2b ) << std::endl; */
+
+//     /*    cout << "old distance = " << a->pos.distance ( b->pos ) << std::endl; */
+//     /*    cout << "new distance = " << apos.distance ( bpos ) << std::endl; */
+
+//     a->collide( apos );
+//     b->collide( bpos );
+// }                          
+
+
 void
 Stadium::calcCollisionPos( MPObject * a,
                            MPObject * b )
@@ -1775,73 +1857,89 @@ Stadium::calcCollisionPos( MPObject * a,
         return;
     }
 
-    PVector apos = a->pos();
-    PVector bpos = b->pos();
-    {
-        PVector mid = a->pos() + b->pos();
-        mid /= 2.0;
+    // std::cout << "************************************\n";
+    // std::cout << "Time: " << this->time() << std::endl;
+    // std::cout << "a_size: " << a->size() << std::endl;
+    // std::cout << "b_size: " << b->size() << std::endl;
 
-        PVector mid2a = a->pos() - mid;
-        PVector mid2b = b->pos() - mid;
+    const PVector apos = a->pos();
+    const PVector alast = a->lastPos();
+    const PVector avel = a->pos() - a->lastPos(); 
+    const double arad =  a->size() + EPS;
+    
+    const PVector bpos = b->pos();
+    const PVector blast = b->lastPos();
+    const PVector bvel = b->pos() - b->lastPos(); 
+    const double brad =  b->size() + EPS;
 
-        /* pfr 10/25/01
-           This was a really nasty bug. This used to be the condition
-           if ( a->pos == b->pos )
-           If a->pos and b->pos are approximately equal (but
-           not ==, then a->pos - mid and b->pos - mid can both be 0.
-           This means that in the else clause below, we call PVector::r(v)
-           on two zero vectors, which makes them both (v,0).
-           Then, the while statement below is an infinite loop */
-        if ( a->pos() == b->pos()
-             || ( ( a->pos() - mid ).r() < EPS
-                  && ( b->pos() - mid ).r() < EPS )
-             )
-        {
-            // if the two objects are directly on top on one and other
-            // then they will be separated at a random angle
-            double a_ang = drand ( -M_PI, M_PI );
-            double b_ang = normalize_angle( a_ang + M_PI );
-            mid2a = PVector::fromPolar( ( a->size() + b->size() ) / 2.0 + EPS, a_ang );
-            mid2b = PVector::fromPolar( ( a->size() + b->size() ) / 2.0 + EPS, b_ang );
+
+    // std::cout << "al: " << alast << "\nbl: " << blast 
+                // << "\nap: " << apos << "\nbp: " << bpos 
+                // << "\nav: " << avel << "\nbv: " << bvel << std::endl;
+
+
+    // arad + brad = sqrt((alast.x + avel.x*t - blast.x - bvel.x*t)**2 + (alast.y + avel.y*t - blast.y - bvel.y*t)**2)
+    const double _a = std::pow(avel.x, 2) - 2 * avel.x * bvel.x + std::pow(avel.y, 2) 
+                        - 2 * avel.y * bvel.y + std::pow(bvel.x, 2) + std::pow(bvel.y, 2);
+
+    const double _b = 2.*alast.x*avel.x - 2.*alast.x*bvel.x + 2.*alast.y*avel.y - 2.*alast.y*bvel.y - 2.*avel.x*blast.x - 2.*avel.y*blast.y + 2.*blast.x*bvel.x + 2.*blast.y*bvel.y;
+
+    const double _c = std::pow(alast.x,2) - 2.*alast.x*blast.x + std::pow(alast.y,2) - 2.*alast.y*blast.y - std::pow(arad,2) - 2.*arad*brad + std::pow(blast.x,2) + std::pow(blast.y,2) - std::pow(brad,2);
+    
+    const double delta = _b*_b - 4.*_a*_c;
+
+    // t must be greater than or equal to zero
+    double t = -1.;
+
+
+    // std::cout << "_a: " << _a << std::endl;
+    // std::cout << "_b: " << _b << std::endl;
+    // std::cout << "_c: " << _c << std::endl;
+
+    // std::cout << "delta: " << delta << std::endl;
+
+    if (delta < 0){
+        // std::cout << "(calcCollisionPos) Err: No Collision!" << std::endl;
+        return;
+    }
+    else{
+        const double _sqrt_delta = std::sqrt(delta);
+        const double t1 = (-_b + _sqrt_delta)/(2.*_a);
+        const double t2 = (-_b - _sqrt_delta)/(2.*_a);
+
+        // std::cout << "t1: " << t1 << std::endl;
+        // std::cout << "t2: " << t2 << std::endl;
+
+        if (t1 < 0 && t2 < 0){
+            // std::cout << "(calcCollisionPos) Err: Collision happened before!" << std::endl;
+            return;
         }
-        else
-        {
-            mid2a.normalize( ( a->size() + b->size() ) / 2.0 + EPS );
-            mid2b.normalize( ( a->size() + b->size() ) / 2.0 + EPS );
+        else if (t1 < 0 && t2 > 0){
+            t = t2;
         }
-
-        apos = mid + mid2a;
-        bpos = mid + mid2b;
-
-        // 0.01% is added to the movement, as sometimes structural noise
-        // means that even though mid2a and mid2b should be
-        // a->size + b->size apart, they are ever so slightly
-        // less.
-        int count = 0;
-        const double collision_dist2 = std::pow( a->size() + b->size(), 2 );
-        while ( apos.distance2( bpos ) < collision_dist2
-                && count < 10 )
-        {
-            mid2a.normalize( mid2a.r() * 1.0001 );
-            mid2b.normalize( mid2b.r() * 1.0001 );
-            apos = mid + mid2a;
-            bpos = mid + mid2b;
-            ++count;
+        else if (t1 > 0 && t2 < 0){
+            t = t1;
         }
+        else {
+            t = std::min(t1, t2);
+        }
+    }  
+
+    if(t > 1.){
+        // std::cout << "(calcCollisionPos) Err: Collide After 1 Cycle!" << std::endl;
+        return;
     }
 
+    // std::cout << "t: " << t << std::endl;
 
-    /*    cout << "apos = " << a->pos << std::endl; */
-    /*    cout << "anewpos = " << (mid + mid2a ) << std::endl; */
+    const PVector new_apos = alast + avel*t;
+    const PVector new_bpos = blast + bvel*t;
 
-    /*    cout << "bpos = " << b->pos << std::endl; */
-    /*    cout << "bnewpos = " << (mid + mid2b ) << std::endl; */
+    // std::cout << "new_apos: " << new_apos << std::endl;
+    // std::cout << "new_bpos: " << new_bpos << std::endl;
 
-    /*    cout << "old distance = " << a->pos.distance ( b->pos ) << std::endl; */
-    /*    cout << "new distance = " << apos.distance ( bpos ) << std::endl; */
-
-    a->collide( apos );
-    b->collide( bpos );
+    a->collide( new_apos );
+    b->collide( new_bpos );
 }
 
 

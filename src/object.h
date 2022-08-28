@@ -519,6 +519,8 @@ protected:
     double	M_decay;
     double	M_randp;
 
+    PVector M_last_pos;
+
     double M_weight;
     double M_max_speed;
     // th 6.3.00
@@ -556,6 +558,11 @@ public:
       {
           return M_stadium;
       }
+    
+    const
+    PVector & lastPos() const {
+      return M_last_pos;
+    }
 
     const
     PVector & vel() const
