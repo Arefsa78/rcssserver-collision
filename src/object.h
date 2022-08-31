@@ -563,6 +563,11 @@ public:
     PVector & lastPos() const {
       return M_last_pos;
     }
+    
+    const
+    double & weight() const {
+      return M_weight;
+    }
 
     const
     PVector & vel() const
@@ -610,6 +615,7 @@ public:
     void clearCollision()
       {
           M_post_collision_pos.assign( 0.0, 0.0 );
+          M_post_collision_vel.assign( 0.0, 0.0 );
           M_collision_count = 0;
           // M_collided is reset in updateCollVel()
       }

@@ -434,8 +434,12 @@ private:
     void calcBallCollisionPos( Player * p );
     void calcCollisionPos( MPObject * a,
                            MPObject * b );
+    void calcCollisionPos( MPObject * a,
+                           MPObject * b,
+                           PVector & collision_point );                           
     void calcCollisionVel( MPObject * a,
-                           MPObject * b );
+                           MPObject * b,
+                           const PVector & collision_point );
 
     void checkAutoMode();
     void startTeams();
