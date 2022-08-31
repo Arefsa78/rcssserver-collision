@@ -1871,6 +1871,7 @@ Stadium::calcCollisionPos( MPObject * a,
     double t = -1.;
 
     if (delta < 0){
+        std::cout << "(calcCollisionPos) ERR: No Collision occured!" << std::endl;
         return;
     }
     else{
@@ -1879,22 +1880,32 @@ Stadium::calcCollisionPos( MPObject * a,
         const double t2 = (-_b - _sqrt_delta)/(2.*_a);
 
         if (t1 < 0 && t2 < 0){
+            std::cout << "(calcCollisionPos) ERR: Colision occured before current cycle!" << std::endl;
             return;
         }
-        else if (t1 < 0 && t2 > 0){
+        else if (t1 < 0 && t2 >= 0){
             t = t2;
         }
-        else if (t1 > 0 && t2 < 0){
+        else if (t1 >= 0 && t2 < 0){
             t = t1;
         }
         else {
             t = std::min(t1, t2);
         }
+
+        if (t > 1.){
+            double min_t = std::min(t1, t2);
+            if (min_t < 0 && min_t >= -1) {
+                t = min_t;
+            }
+            else{
+                std::cout << "(calcCollisionPos) ERR: Collision will happnes after current cycle!" << std::endl;
+                return;
+            }
+        }
     }  
 
-    if(t > 1.){
-        return;
-    }
+
 
     const PVector new_apos = alast + avel*t;
     const PVector new_bpos = blast + bvel*t;
@@ -1902,30 +1913,20 @@ Stadium::calcCollisionPos( MPObject * a,
     const PVector new_a2b = (new_bpos - new_apos).normalize(arad);
     collision_point = new_apos + new_a2b;
 
-    const double e = 0.;
 
-    const PVector ar = collision_point - new_apos; // relative position of collision
-    const PVector ar2 = PVector(ar.x*ar.x, ar.y*ar.y);
-    const double am = a->weight(); // mess
-    const double ai = 0.5 * am * arad*arad; // Inertia
+    const double cr = 0.0;
 
-    const PVector br = collision_point - new_bpos; // relative position of collision
-    const PVector br2 = PVector(br.x*br.x, br.y*br.y);
-    const double bm = b->weight(); // mess
-    const double bi = 0.5 * bm * brad*brad; // Inertia
+    const double am = a->weight();
+    const double bm = b->weight();
 
-    const double k = 1/(am*am)+ 2/(am*bm) +1/(bm*bm) - ar2.x/(am*ai) - br2.x/(am*bi) 
-                     - ar2.y/(am*ai) - ar2.y/(bm*ai) - ar2.x/(bm*ai) - br2.x/(bm*bi) 
-                     - br2.y/(am*bi) - br2.y/(bm*bi) + ar2.y*br2.x/(ai*bi) + ar2.x*br2.y/(ai*bi) 
-                     - 2*ar.x*ar.y*br.x*br.y/(ai*bi);
+    const PVector ua = avel;
+    const PVector ub = bvel;
 
-    const double jx = (e+1)/k * (avel.x - bvel.x) * (1/am - ar2.x/ai + 1/bm - br2.x/bi)
-                    - (e+1)/k * (avel.y - bvel.y) * (ar.x * ar.y / ai + br.x * br.y / bi);
-    const double jy = -1 * (e+1)/k * (avel.x - bvel.x) * (ar.x * ar.y / ai + br.x * br.y / bi)
-                         + (e+1)/k * (avel.y - bvel.y) * (1/am - ar2.y/ai + 1/bm - br2.y/bi);
-    
-    const PVector new_avel = PVector(avel.x - jx/am, avel.y - jy/am);
-    const PVector new_bvel = PVector(bvel.x - jx/bm, bvel.y - jy/bm);
+    const PVector new_avel = (am*ua + bm*ub + bm*cr*(ub - ua))/(am + bm);
+    const PVector new_bvel = (am*ua + bm*ub + am*cr*(ua - ub))/(am + bm);
+
+    a->collide_vel(new_avel);
+    b->collide_vel(new_bvel);  
 
     std::cout << "###########POS XY###########"
               << "\napos: " << apos
@@ -1947,7 +1948,10 @@ Stadium::calcCollisionPos( MPObject * a,
 
     a->collide( new_apos );
     b->collide( new_bpos );
-
+    /*
+        if future_collision && ab_dist < arad+brad
+            ab_line -> collision point -> move forcefully out
+    */
     a->collide_vel(new_avel);
     b->collide_vel(new_bvel);
 }
